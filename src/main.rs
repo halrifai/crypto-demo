@@ -100,6 +100,17 @@ impl App for MyApp {
                                 if previous_selected != self.selected {
                                     deltoken();
                                     self.output.clear();
+                                    self.encrypted_data_aes.clear();
+                                    self.encrypted_data_aes_base64.clear();
+                                    self.encrypted_data_rsa.clear();
+                                    self.encrypted_data_rsa_base64.clear();
+                                    self.encrypted_data_ecdh.clear();
+                                    self.encrypted_data_ecdh_base64.clear();
+                                    self.decrypted_data_aes.clear();
+                                    self.decrypted_data_rsa.clear();
+                                    self.decrypted_data_ecdh.clear();
+                                    self.output.clear();
+                                    self.input_encrypted_text.clear();
                                 }
                             });
                     });
