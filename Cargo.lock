@@ -642,6 +642,7 @@ dependencies = [
  "ed25519-dalek",
  "eframe",
  "egui",
+ "epaint",
  "futures",
  "nitrokey",
  "once_cell",
@@ -992,6 +993,7 @@ dependencies = [
  "atomic_refcell",
  "emath",
  "nohash-hasher",
+ "parking_lot 0.11.2",
 ]
 
 [[package]]

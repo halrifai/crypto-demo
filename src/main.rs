@@ -1,3 +1,4 @@
+use std::fs;
 use std::sync::Arc;
 use std::thread::sleep;
 use epi::App;
@@ -201,9 +202,15 @@ impl App for MyApp {
                 ui.add_space(10.0);
                 if ui.add_sized([500.0, 40.0], egui::Button::new("Verify RSA")).clicked(){
                     ctx.request_repaint();
-                    self.sign_data_rsa = "Signature verified: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().0.to_string();
-                    self.output.clear();
-                    self.output.push_str(&self.sign_data_rsa);
+
+                    let verification_result = sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().0;
+                    if verification_result {
+                        self.output.clear();
+                        self.output.push_str("Signature verified successfully!");
+                    } else {
+                        self.output.clear();
+                        self.output.push_str("Signature verification failed!");
+                    }
                 };
                 ui.add_space(10.0);
                 if ui.add_sized([500.0, 40.0], egui::Button::new("Encrypt RSA")).clicked(){
@@ -398,6 +405,10 @@ fn main() {
         selected: "".to_string(),
         input_encrypted_text: "".to_string(),
     };
+    let file_path = "token.json";
+    if fs::metadata(file_path).is_ok() {
+        fs::remove_file(file_path);
+    }
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(Box::new(app), native_options);
 }
