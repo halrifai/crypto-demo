@@ -85,15 +85,18 @@ impl App for MyApp {
                     ui.horizontal(|ui| {
                 ui.add_space(382.0);
                 egui::ComboBox::from_id_source("Select algorithm")
-                .width(492.0)
-                .selected_text("Select algorithm")
-                .show_ui(ui, |ui|
-                {
-                    ui.selectable_value(&mut self.selected, "AES".to_string(), "AES");
-                    ui.selectable_value(&mut self.selected, "RSA".to_string(), "RSA");
-                    ui.selectable_value(&mut self.selected, "ECDH".to_string(), "ECDH");
-                    ui.selectable_value(&mut self.selected, "ECDSA".to_string(), "ECDSA");
-                });
+                    .width(492.0)
+                    .selected_text("Select algorithm")
+                    .show_ui(ui, |ui| {
+                        let previous_selected = self.selected.clone();
+                        ui.selectable_value(&mut self.selected, "AES".to_string(), "AES");
+                        ui.selectable_value(&mut self.selected, "RSA".to_string(), "RSA");
+                        ui.selectable_value(&mut self.selected, "ECDH".to_string(), "ECDH");
+                        ui.selectable_value(&mut self.selected, "ECDSA".to_string(), "ECDSA");
+                        if previous_selected != self.selected {
+                            deltoken();
+                        }
+                    });
             });
             ui.style_mut().visuals.override_text_color = Some(Color32::from_rgb(255, 255, 255));
             ui.add_space(10.0);
@@ -405,14 +408,17 @@ fn main() {
         selected: "".to_string(),
         input_encrypted_text: "".to_string(),
     };
-    let file_path = "token.json";
-    if fs::metadata(file_path).is_ok() {
-        fs::remove_file(file_path);
-    }
+    deltoken();
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(Box::new(app), native_options);
 }
-
+fn deltoken() {
+    let file_path = "token.json";
+    println!("Deleting token file: {:?}", file_path);
+    if fs::metadata(file_path).is_ok() {
+        fs::remove_file(file_path);
+    }
+}
 fn create_aes_key_gui() {
     for &key_size in &[KeyBits::Bits128, KeyBits::Bits192, KeyBits::Bits256] {
         for &aes_mode in &[SymmetricMode::Gcm, SymmetricMode::Ecb, SymmetricMode::Cbc, SymmetricMode::Ctr, SymmetricMode::Cfb, SymmetricMode::Ofb] {
