@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use epi::App;
 use eframe::{egui, epi};
-use egui::Color32;
+use egui::{Color32, Stroke, stroke_ui, vec2};
 use serde::de::Error;
 use crate::common::traits::key_handle::KeyHandle;
 use crate::common::crypto::algorithms::encryption::{AsymmetricEncryption, BlockCiphers, EccCurves, EccSchemeAlgorithm, SymmetricMode};
@@ -56,227 +56,301 @@ struct MyApp {
     decrypted_data_rsa: String,
     decrypted_data_ecdh: String,
     output: String,
+    selected: String,
+    input_encrypted_text: String,
 }
 
 impl App for MyApp {
     fn name(&self) -> &str {
-        "ECDSA-Test"
+        "RheinSec-GUI"
     }
 
     fn update(&mut self, ctx: &egui::CtxRef, _frame: &mut epi::Frame<'_>) {
         ctx.set_visuals(egui::Visuals::light());
         egui::CentralPanel::default().show(ctx, |ui| {
-//            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+            ui.horizontal(|ui| {
+                ui.vertical_centered(|ui| {
+
+
             ui.visuals_mut().dark_mode = false;
             ui.style_mut().visuals.button_frame = true;
             ui.style_mut().visuals.widgets.inactive.bg_fill = Color32::from_rgb(0, 0, 255);
-//           ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Bitte geben Sie den Text ein der Verschlüsselt werden soll:");
-//            ui.text_edit_singleline(&mut self.input_encrypt_text);
             ui.style_mut().visuals.override_text_color = Some(Color32::from_rgb(255, 255, 255));
             ui.add_space(5.0);
+            ui.visuals_mut().widgets.inactive.fg_stroke = Stroke::new(1.0, Color32::from_rgb(255, 255, 255));
+            ui.style_mut().body_text_style = egui::TextStyle::Heading;
+            ui.style_mut().override_text_style = Option::from(egui::TextStyle::Heading);
 
-                       if ui.button("AES Schlüssel erzeugen").clicked() {
-                           ctx.request_repaint();
-                           create_aes_key_gui();
-                           self.output.push_str("AES Schlüssel wurden erzeugt!");
-                           self.output.push_str("\n");
-                           self.output.push_str("\n");
-                           self.output.push_str("\n");
-                        }
-
-                        ui.add_space(10.0);
-
-                        if ui.button("AES Schlüssel laden").clicked() {
-                            ctx.request_repaint();
-                            self.aes_key = load_aes_key_gui().unwrap();
-                            self.output.push_str(&self.aes_key);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
-
-            ui.add_space(10.0);
-/*
-            //RSA
-            if ui.button("RSA Schlüssel erzeugen").clicked() {
-                create_rsa_key_gui();
-                self.output.push_str("RSA Schlüssel wurden erzeugt!");
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-            }
-
+                    ui.horizontal(|ui| {
+                ui.add_space(382.0);
+                egui::ComboBox::from_id_source("Select algorithm")
+                .width(492.0)
+                .selected_text("Select algorithm")
+                .show_ui(ui, |ui|
+                {
+                    ui.selectable_value(&mut self.selected, "AES".to_string(), "AES");
+                    ui.selectable_value(&mut self.selected, "RSA".to_string(), "RSA");
+                    ui.selectable_value(&mut self.selected, "ECDH".to_string(), "ECDH");
+                    ui.selectable_value(&mut self.selected, "ECDSA".to_string(), "ECDSA");
+                });
+            });
+            ui.style_mut().visuals.override_text_color = Some(Color32::from_rgb(255, 255, 255));
             ui.add_space(10.0);
 
-            if ui.button("RSA Schlüssel laden").clicked() {
-                ctx.request_repaint();
-                self.rsa_key = load_rsa_key_gui().unwrap();
-                self.output.push_str(&self.rsa_key);
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-            }
+            if(&self.selected == "AES") {
 
-            ui.add_space(10.0);
-            //RSA
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Generate AES key")).clicked(){
+                    ctx.request_repaint();
+                    create_aes_key_gui();
+                    self.output.clear();
+                    self.output.push_str("AES keys generated!");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
 
-                        //ECDH
-                        if ui.button("ECDH Schlüssel erzeugen").clicked() {
-                            ctx.request_repaint();
-                            create_ecdh_key_gui();
-                            self.output.push_str("ECDH Schlüssel wurden erzeugt!");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
+                ui.add_space(10.0);
 
-                        ui.add_space(10.0);
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Load AES key")).clicked() {
+                    ctx.request_repaint();
+                    self.aes_key = load_aes_key_gui().unwrap();
+                    self.output.clear();
+                    self.output.push_str(&self.aes_key);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
 
-                        if ui.button("ECDH Schlüssel laden").clicked() {
-                            ctx.request_repaint();
-                            self.ecdh_key = load_ecdh_key_gui().unwrap();
-                            self.output.push_str(&self.ecdh_key);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
+                //ui.add_sized([500.0, 40.0], egui::Label::new("test123").text_color(egui::Color32::from_rgb(0, 0, 0)));
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the Data that should be encrypted");
+                ui.add_sized([500.0, 40.0], egui::TextEdit::singleline(&mut self.input_encrypt_text));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
 
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Encrypt AES")).clicked() {
+                    ctx.request_repaint();
+                    self.encrypted_data_rsa = "Input data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text, SymmetricMode::Ccm, &[KeyBits::Bits128, KeyBits::Bits192, KeyBits::Bits256]).unwrap().0;
+                    self.output.clear();
+                    self.output.push_str(&self.encrypted_data_aes);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.encrypted_data_aes = "Encrypted data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text, SymmetricMode::Cbc, &[KeyBits::Bits128]).unwrap().1;
+                    self.output.push_str(&self.encrypted_data_aes_base64);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
 
+                    ui.add_space(10.0);
+                    ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                    ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the encrypted String");
+                    ui.add_sized([500.0, 40.0], egui::TextEdit::singleline(&mut self.input_encrypted_text));
+                    ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                    ui.add_space(10.0);
 
-                        //ECDSA
-                        if ui.button("ECDSA Schlüssel erzeugen").clicked() {
-                            ctx.request_repaint();
-                            create_ecdsa_key_gui();
-                            self.output.push_str("ECDSA Schlüssel wurden erzeugt!");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
+                    if ui.add_sized([500.0, 40.0], egui::Button::new("Decrypt AES")).clicked(){
+                        self.decrypted_data_aes = "Decrypted Data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text,SymmetricMode::Ccm,&[KeyBits::Bits128]).unwrap().2;
+                        self.output.clear();
+                        self.output.push_str(&self.decrypted_data_aes);
+                    };
 
-                        ui.add_space(10.0);
-
-                        if ui.button("ECDSA Schlüssel laden").clicked(){
-                            ctx.request_repaint();
-                            self.ecdsa_key = load_ecdsa_key_gui().unwrap();
-                            self.output.push_str(&self.ecdsa_key);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
-
-*/
-            ui.add_space(10.0);
-            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
-            ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Bitte geben Sie den Text ein der Verschlüsselt werden soll:");
-            ui.text_edit_singleline(&mut self.input_encrypt_text);
-            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
-            ui.add_space(10.0);
-/*
-            //sign
-            if ui.button("RSA Signieren").clicked(){
-                ctx.request_repaint();
-                self.sign_data_rsa = "Signatur überprüfung erfolgreich: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().0.to_string();
-                self.output.push_str(&self.sign_data_rsa);
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-                self.sign_data_rsa = "Signatur: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().1;
-                self.output.push_str(&self.sign_data_rsa);
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-            }
-
-//            ui.add_space(10.0);
-
-                        if ui.button("ECDSA Signieren").clicked(){
-                            ctx.request_repaint();
-                            self.sign_data_ecdsa = "Signatur überprüfung erfolgreich: ".to_owned() + &*sign_and_verifiy_ecdsa_gui(&self.input_encrypt_text).unwrap().0.to_string();
-                            self.output.push_str(&self.sign_data_ecdsa);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.sign_data_ecdsa = "Signatur: ".to_owned() + &*sign_and_verifiy_ecdsa_gui(&self.input_encrypt_text).unwrap().1;
-                            self.output.push_str(&self.sign_data_ecdsa);
-                            self.show_sign_ecdsa_str=true;
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
-
-
-                        ui.add_space(10.0);
-*/
-                        //encrypt
-                        if ui.button("AES Verschlüsseln").clicked(){
-                            ctx.request_repaint();
-                            self.encrypted_data_rsa = "Input Data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text, SymmetricMode::Ccm, &[KeyBits::Bits128,KeyBits::Bits192,KeyBits::Bits256]).unwrap().0;
-                            self.output.push_str(&self.encrypted_data_aes);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.encrypted_data_aes = "Encrypted Data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text, SymmetricMode::Cbc,&[KeyBits::Bits128]).unwrap().1;
-                            self.output.push_str(&self.encrypted_data_aes_base64);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-
-                        }
-
-
-            ui.add_space(10.0);
-/*
-            if ui.button("RSA Verschlüsseln").clicked(){
-                ctx.request_repaint();
-                self.encrypted_data_rsa = "Input Daten: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().0;
-                self.output.push_str(&self.encrypted_data_rsa);
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-                self.encrypted_data_rsa_base64 = "Verschlüsselte Daten: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().1;
-                self.output.push_str(&self.encrypted_data_rsa_base64);
-                self.output.push_str("\n");
-                self.output.push_str("\n");
-                self.output.push_str("\n");
+                    ui.add_space(10.0);
+                    ui.colored_label(egui::Color32::from_rgb(0, 0, 0),&mut self.output);
             }
 
 
-                        //ui.add_space(10.0);
+            if(self.selected == "RSA"){
 
-                        if ui.button("ECDH Verschlüsseln").clicked(){
-                            ctx.request_repaint();
-                            self.encrypted_data_ecdh = "Input Daten: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().0;
-                            self.output.push_str(&self.encrypted_data_ecdh);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.show_encrypt_edch_data=true;
-                            self.encrypted_data_ecdh_base64 = "Verschlüsselte Daten: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().1;
-                            self.output.push_str(&self.encrypted_data_ecdh_base64);
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                            self.output.push_str("\n");
-                        }
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Generate RSA key")).clicked() {
+                    create_rsa_key_gui();
+                    self.output.clear();
+                    self.output.push_str("RSA keys generated!");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
 
-                        ui.add_space(10.0);
-*/
-                        //decrypt
-                        if ui.button("Decrypt AES").clicked(){
-                            self.decrypted_data_aes = "Decrypted Data: ".to_owned() + &*encrypt_and_decrypt_aes_gui(&self.input_encrypt_text,SymmetricMode::Ccm,&[KeyBits::Bits128]).unwrap().2;
-                            self.output.push_str(&self.decrypted_data_aes);
-                        }
-/*
-            ui.add_space(10.0);
+                ui.add_space(10.0);
 
-            if ui.button("RSA Entschlüsseln").clicked(){
-                self.decrypted_data_rsa = "Entschlüsselte Daten: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().2;
-                self.output.push_str(&self.decrypted_data_rsa);
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Load RSA key")).clicked() {
+                    ctx.request_repaint();
+                    self.rsa_key = load_rsa_key_gui().unwrap();
+                    self.output.clear();
+                    self.output.push_str(&self.rsa_key);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the Data that should be encrypted");
+                ui.add_sized([500.0, 20.0], egui::TextEdit::singleline(&mut self.input_encrypt_text));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Sign RSA")).clicked(){
+                    ctx.request_repaint();
+                    self.output.clear();
+                    self.sign_data_rsa = "Signature: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().1;
+                    self.output.push_str(&self.sign_data_rsa);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+                ui.add_space(10.0);
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Verify RSA")).clicked(){
+                    ctx.request_repaint();
+                    self.sign_data_rsa = "Signature verified: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().0.to_string();
+                    self.output.clear();
+                    self.output.push_str(&self.sign_data_rsa);
+                };
+                ui.add_space(10.0);
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Encrypt RSA")).clicked(){
+                    ctx.request_repaint();
+                    self.encrypted_data_rsa = "Input data: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().0;
+                    self.output.clear();
+                    self.output.push_str(&self.encrypted_data_rsa);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.encrypted_data_rsa_base64 = "Encrypted data: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().1;
+                    self.output.push_str(&self.encrypted_data_rsa_base64);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the encrypted String");
+                let mut encrypted_data_without_prefix = self.encrypted_data_rsa_base64.replace("Encrypted data: ", "");
+                ui.add_sized([500.0, 20.0], egui::TextEdit::singleline(&mut encrypted_data_without_prefix));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Decrypt RSA")).clicked(){
+                    self.decrypted_data_rsa = "Decrypted data: ".to_owned() + &*encrypt_and_decrypt_rsa_gui(&self.input_encrypt_text).unwrap().2;
+                    self.output.clear();
+                    self.output.push_str(&self.decrypted_data_rsa);
+                };
+
+                ui.add_space(10.0);
+
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),&mut self.output);
             }
 
-            ui.add_space(10.0);
 
-                        if ui.button("ECDH Entschlüsseln").clicked(){
-                            ctx.request_repaint();
-                            self.decrypted_data_ecdh = "Entschlüssete Daten: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().2;
-                            self.output.push_str(&self.decrypted_data_ecdh);
-                        }
-*/
-            ui.add_space(10.0);
+            if(self.selected == "ECDH"){
 
-            ui.colored_label(egui::Color32::from_rgb(0, 0, 0),&self.output);
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Generate ECDH key")).clicked() {
+                    ctx.request_repaint();
+                    create_ecdh_key_gui();
+                    self.output.push_str("ECDH keys generated!");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Load ECDH")).clicked() {
+                    ctx.request_repaint();
+                    self.ecdh_key = load_ecdh_key_gui().unwrap();
+                    self.output.push_str(&self.ecdh_key);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the Data that should be encrypted");
+                ui.add_sized([500.0, 20.0], egui::TextEdit::singleline(&mut self.input_encrypt_text));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
+
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Encrypt ECDH")).clicked() {
+                    ctx.request_repaint();
+                    self.encrypted_data_ecdh = "Input data: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().0;
+                    self.output.push_str(&self.encrypted_data_ecdh);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.show_encrypt_edch_data = true;
+                    self.encrypted_data_ecdh_base64 = "Encrypted daten: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().1;
+                    self.output.push_str(&self.encrypted_data_ecdh_base64);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the encrypted String");
+                ui.add_sized([500.0, 20.0], egui::TextEdit::singleline(&mut self.input_encrypted_text));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Decrypt ECDH")).clicked(){
+                    ctx.request_repaint();
+                    self.decrypted_data_ecdh = "Decrypted data: ".to_owned() + &*encrypt_and_decrypt_ecdh_gui(&self.input_encrypt_text).unwrap().2;
+                    self.output.push_str(&self.decrypted_data_ecdh);
+                };
+
+                ui.add_space(10.0);
+
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),&mut self.output);
+            }
+
+            if(self.selected == "ECDSA"){
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("generate ECDSA keys")).clicked() {
+                    ctx.request_repaint();
+                    create_ecdsa_key_gui();
+                    self.output.push_str("ECDSA keys generated!");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Load ECDSA")).clicked(){
+                    ctx.request_repaint();
+                    self.ecdsa_key = load_ecdsa_key_gui().unwrap();
+                    self.output.push_str(&self.ecdsa_key);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),"Please provide the Data that should be encrypted");
+                ui.add_sized([500.0, 20.0], egui::TextEdit::singleline(&mut self.input_encrypt_text));
+                ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(255, 255, 255));
+                ui.add_space(10.0);
+
+                if ui.add_sized([500.0, 40.0], egui::Button::new("Sign ECDSA")).clicked(){
+                    ctx.request_repaint();
+                    self.sign_data_ecdsa = "Signature verified: ".to_owned() + &*sign_and_verifiy_ecdsa_gui(&self.input_encrypt_text).unwrap().0.to_string();
+                    self.output.push_str(&self.sign_data_ecdsa);
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.sign_data_ecdsa = "Signature: ".to_owned() + &*sign_and_verifiy_ecdsa_gui(&self.input_encrypt_text).unwrap().1;
+                    self.output.push_str(&self.sign_data_ecdsa);
+                    self.show_sign_ecdsa_str=true;
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                    self.output.push_str("\n");
+                };
+
+                ui.add_space(10.0);
+
+                ui.colored_label(egui::Color32::from_rgb(0, 0, 0),&mut self.output);
+            }
+                });
+            });
         });
     }
 }
@@ -321,6 +395,8 @@ fn main() {
         decrypted_data_rsa: "".to_string(),
         decrypted_data_ecdh: "".to_string(),
         output: "".to_string(),
+        selected: "".to_string(),
+        input_encrypted_text: "".to_string(),
     };
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(Box::new(app), native_options);
@@ -620,7 +696,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
     match key_type {
         "rsa" => Some(NksConfig::new(
             "".to_string(),
-            "https://localhost:5000/".to_string(),
+            "https://141.19.143.81/".to_string(),
             Option::from(AsymmetricEncryption::Rsa(2048.into())),
             Hash::Sha2(256.into()),
             vec![
@@ -633,7 +709,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
         )),
         "ecdsa" => Some(NksConfig::new(
             "".to_string(),
-            "https://localhost:5000/".to_string(),
+            "https://141.19.143.81/".to_string(),
             Option::from(AsymmetricEncryption::Ecc(EccSchemeAlgorithm::EcDsa(EccCurves::Curve25519))),
             Hash::Sha2(Sha2Bits::Sha256),
             vec![KeyUsage::SignEncrypt, KeyUsage::ClientAuth],
@@ -641,7 +717,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
         )),
         "ecdh" => Some(NksConfig::new(
             "".to_string(),
-            "https://localhost:5000/".to_string(),
+            "https://141.19.143.81/".to_string(),
             Option::from(AsymmetricEncryption::Ecc(EccSchemeAlgorithm::EcDh(EccCurves::Curve25519))),
             Hash::Sha2(384.into()),
             vec![KeyUsage::Decrypt],
@@ -652,7 +728,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
             let aes_mode = aes_mode.unwrap_or(SymmetricMode::Gcm); // Default to GCM mode if no mode is provided
             Some(NksConfig::new(
                 "".to_string(),
-                "https://localhost:5000/".to_string(),
+                "https://141.19.143.81/".to_string(),
                 None,
                 Hash::Sha2(256.into()),
                 vec![KeyUsage::Decrypt],
@@ -673,25 +749,19 @@ fn extract_keys_from_secrets(provider: &NksProvider, key_id: &str) -> Result<(St
                 // Check if the key_id matches
                 if key.get("id").unwrap().as_str().unwrap() == key_id {
                     // Set the public_key and private_key
-                    let public_key = key.get("publicKey").unwrap().as_str().unwrap().to_string();
-                    let private_key = key.get("privateKey").unwrap().as_str().unwrap().to_string();
+                    let mut public_key = key.get("publicKey").unwrap().as_str().unwrap().to_string();
+                    let  mut private_key = key.get("privateKey").unwrap().as_str().unwrap().to_string();
+
+                    if key_id == "test_rsa_key" {
+                        // Schneiden Sie den öffentlichen Schlüssel auf die ersten 20 Zeichen ab
+                        public_key = public_key.chars().take(150).collect::<String>();
+                        private_key = private_key.chars().take(150).collect::<String>();
+                    }
+
                     return Ok((private_key, public_key));
                 }
             }
         }
-
-        // Extrahieren Sie die
-        let public_key= "".to_string();
-        let private_key= "".to_string();
-        if  (key_id == "test_rsa_key" || key_id == "test_ecdsa_key" || key_id == "test_ecdh_key"){
-            let public_key = secrets.get("publicKey").unwrap().as_str().unwrap().to_string();
-            let private_key = secrets.get("privateKey").unwrap().as_str().unwrap().to_string();
-        } else {
-            let private_key = secrets.get("privateKey").unwrap().as_str().unwrap().to_string();
-        }
-
-        Ok((public_key, private_key))
-    } else {
-        Err(serde_json::Error::custom("secrets_json is None"))
     }
+    Err(serde_json::Error::custom("secrets_json is None"))
 }

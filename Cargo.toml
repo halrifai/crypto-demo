@@ -24,7 +24,7 @@ debug = false
 strip = "symbols"
 
 [features]
-default = []
+default = ["nks"]
 nks = []
 android = []
 debug = []
@@ -41,6 +41,7 @@ win = ["tpm", "windows"]
 yubi = ["hsm", "yubikey"]
 
 [dependencies]
+epaint = "0.15.0"
 egui = "0.15.0"
 eframe = "0.15.0"
 anyhow = "*"
