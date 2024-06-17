@@ -83,22 +83,28 @@ impl App for MyApp {
             ui.style_mut().override_text_style = Option::from(egui::TextStyle::Heading);
 
                     ui.horizontal(|ui| {
-                ui.add_space(382.0);
-                egui::ComboBox::from_id_source("Select algorithm")
-                    .width(492.0)
-                    .selected_text("Select algorithm")
-                    .show_ui(ui, |ui| {
-                        let previous_selected = self.selected.clone();
-                        ui.selectable_value(&mut self.selected, "AES".to_string(), "AES");
-                        ui.selectable_value(&mut self.selected, "RSA".to_string(), "RSA");
-                        ui.selectable_value(&mut self.selected, "ECDH".to_string(), "ECDH");
-                        ui.selectable_value(&mut self.selected, "ECDSA".to_string(), "ECDSA");
-                        if previous_selected != self.selected {
-                            deltoken();
-                        }
+                        // Dynamically calculate the space needed to center the combo box every time the UI is drawn
+                        let available_width = ui.available_width();
+                        let space_before = (available_width - 492.0) / 2.0;
+                        ui.add_space(space_before.max(0.0)); // Ensure there's no negative space
+
+                        egui::ComboBox::from_id_source("Select algorithm")
+                            .width(492.0)
+                            .selected_text("Select algorithm")
+                            .show_ui(ui, |ui| {
+                                let previous_selected = self.selected.clone();
+                                ui.selectable_value(&mut self.selected, "AES".to_string(), "AES");
+                                ui.selectable_value(&mut self.selected, "RSA".to_string(), "RSA");
+                                ui.selectable_value(&mut self.selected, "ECDH".to_string(), "ECDH");
+                                ui.selectable_value(&mut self.selected, "ECDSA".to_string(), "ECDSA");
+                                if previous_selected != self.selected {
+                                    deltoken();
+                                    self.output.clear();
+                                }
+                            });
                     });
-            });
-            ui.style_mut().visuals.override_text_color = Some(Color32::from_rgb(255, 255, 255));
+
+                    ui.style_mut().visuals.override_text_color = Some(Color32::from_rgb(255, 255, 255));
             ui.add_space(10.0);
 
             if(&self.selected == "AES") {
@@ -196,7 +202,15 @@ impl App for MyApp {
                 if ui.add_sized([500.0, 40.0], egui::Button::new("Sign RSA")).clicked(){
                     ctx.request_repaint();
                     self.output.clear();
-                    self.sign_data_rsa = "Signature: ".to_owned() + &*sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().1;
+                    let full_signature = sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().1;
+                    let max_length = 80;
+                    if full_signature.len() > max_length {
+                        let start = &full_signature[0..40];
+                        let end = &full_signature[(full_signature.len()-40)..];
+                        self.sign_data_rsa = format!("Signature: {} ..... {}", start, end);
+                    } else {
+                        self.sign_data_rsa = "Signature: ".to_owned() + &full_signature;
+                    }
                     self.output.push_str(&self.sign_data_rsa);
                     self.output.push_str("\n");
                     self.output.push_str("\n");
@@ -209,7 +223,7 @@ impl App for MyApp {
                     let verification_result = sign_and_verifiy_rsa_gui(&self.input_encrypt_text).unwrap().0;
                     if verification_result {
                         self.output.clear();
-                        self.output.push_str("Signature verified successfully!");
+                        self.output.push_str(&format!("Signature verified successfully! input text: {}", self.input_encrypt_text));
                     } else {
                         self.output.clear();
                         self.output.push_str("Signature verification failed!");
