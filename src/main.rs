@@ -735,10 +735,20 @@ fn encrypt_and_decrypt_ecdh_gui(data: &str) -> Result<(String, String, String), 
 
 
 pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<SymmetricMode>) -> Option<Arc<dyn ProviderConfig + Send + Sync>> {
+    let args: Vec<String> = std::env::args().collect();
+    let mut address = "https://141.19.143.81/".to_string();
+
+    for i in 0..args.len() {
+        if args[i] == "-address" && i + 1 < args.len() {
+            address = args[i + 1].clone();
+            break;
+        }
+    }
+    println!("Address: {:?}", address);
     match key_type {
         "rsa" => Some(NksConfig::new(
             "".to_string(),
-            "https://141.19.143.81/".to_string(),
+            address,
             Option::from(AsymmetricEncryption::Rsa(2048.into())),
             Hash::Sha2(256.into()),
             vec![
@@ -751,7 +761,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
         )),
         "ecdsa" => Some(NksConfig::new(
             "".to_string(),
-            "https://141.19.143.81/".to_string(),
+            address,
             Option::from(AsymmetricEncryption::Ecc(EccSchemeAlgorithm::EcDsa(EccCurves::Curve25519))),
             Hash::Sha2(Sha2Bits::Sha256),
             vec![KeyUsage::SignEncrypt, KeyUsage::ClientAuth],
@@ -759,7 +769,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
         )),
         "ecdh" => Some(NksConfig::new(
             "".to_string(),
-            "https://141.19.143.81/".to_string(),
+            address,
             Option::from(AsymmetricEncryption::Ecc(EccSchemeAlgorithm::EcDh(EccCurves::Curve25519))),
             Hash::Sha2(384.into()),
             vec![KeyUsage::Decrypt],
@@ -770,7 +780,7 @@ pub fn get_config(key_type: &str, key_size: Option<KeyBits>, aes_mode: Option<Sy
             let aes_mode = aes_mode.unwrap_or(SymmetricMode::Gcm); // Default to GCM mode if no mode is provided
             Some(NksConfig::new(
                 "".to_string(),
-                "https://141.19.143.81/".to_string(),
+                address,
                 None,
                 Hash::Sha2(256.into()),
                 vec![KeyUsage::Decrypt],
